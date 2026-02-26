@@ -31,3 +31,15 @@ yarn-error.log*
 
 # local .env files
 .env.local*
+
+# Test screenshots and temporary files
+*.png
+!.vscode/
+!.git/
+
+# MCP and Playwright config
+.mcp.json
+.playwright-mcp/
+
+# Lock files (keep only one)
+package-lock.json
