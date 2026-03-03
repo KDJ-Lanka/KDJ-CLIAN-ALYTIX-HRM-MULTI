@@ -203,6 +203,47 @@
                 />
               </div>
             </div>
+
+            <q-separator class="q-my-md" />
+
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label class="form-label">System Role</label>
+                <q-select
+                  v-model="form.systemRole"
+                  :options="systemRoleOptions"
+                  outlined
+                  dense
+                  emit-value
+                  map-options
+                  :disable="isEdit && form.systemRole === 'owner'"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="admin_panel_settings" size="xs" />
+                  </template>
+                </q-select>
+                <div class="text-caption text-grey-6 q-mt-xs">
+                  Assign system-level access permissions for this employee
+                </div>
+              </div>
+            </div>
+
+            <div v-if="form.systemRole && form.systemRole !== 'user'" class="form-row">
+              <div class="form-group full-width">
+                <label class="form-label">Permissions</label>
+                <div class="permissions-grid">
+                  <q-checkbox v-model="form.permissions.employees" label="Employees Management" dense />
+                  <q-checkbox v-model="form.permissions.attendance" label="Attendance Management" dense />
+                  <q-checkbox v-model="form.permissions.leave" label="Leave Management" dense />
+                  <q-checkbox v-model="form.permissions.payroll" label="Payroll Management" dense />
+                  <q-checkbox v-model="form.permissions.reports" label="Reports Access" dense />
+                  <q-checkbox v-model="form.permissions.settings" label="Settings Management" dense />
+                </div>
+                <div class="text-caption text-grey-6 q-mt-xs">
+                  Select which modules this role can access
+                </div>
+              </div>
+            </div>
           </q-card-section>
         </q-card>
 
@@ -298,6 +339,15 @@ const form = reactive({
   bankBranch: '',
   bankAccountNumber: '',
   bankAccountName: '',
+  systemRole: 'user' as 'user' | 'admin' | 'owner',
+  permissions: {
+    employees: false,
+    attendance: false,
+    leave: false,
+    payroll: false,
+    reports: false,
+    settings: false,
+  },
 });
 
 const errors = reactive<Record<string, string>>({});
@@ -320,6 +370,12 @@ const statusOptions = [
   { label: 'Active', value: 'active' },
   { label: 'Inactive', value: 'inactive' },
   { label: 'Pending', value: 'pending' },
+];
+
+const systemRoleOptions = [
+  { label: 'User', value: 'user', description: 'No admin access - regular employee' },
+  { label: 'Admin', value: 'admin', description: 'Full administrative access to all modules' },
+  { label: 'Owner', value: 'owner', description: 'Full access + billing and company management' },
 ];
 
 // Select options
@@ -602,6 +658,27 @@ const handleSubmit = async () => {
 
       if (employeeError) throw employeeError;
 
+      // Create company_admins record if role is admin or owner
+      if (form.systemRole !== 'user') {
+        const permissionsArray: string[] = [];
+        if (form.permissions.employees) permissionsArray.push('employees.manage', 'employees.view');
+        if (form.permissions.attendance) permissionsArray.push('attendance.manage', 'attendance.view');
+        if (form.permissions.leave) permissionsArray.push('leave.manage', 'leave.view');
+        if (form.permissions.payroll) permissionsArray.push('payroll.manage', 'payroll.view');
+        if (form.permissions.reports) permissionsArray.push('reports.view');
+        if (form.permissions.settings) permissionsArray.push('settings.manage');
+
+        const { error: adminError } = await supabase.from('company_admins').insert({
+          company_id: companyId,
+          user_id: userId,
+          role: form.systemRole,
+          permissions: permissionsArray,
+          is_active: true,
+        } as never);
+
+        if (adminError) throw adminError;
+      }
+
       $q.notify({
         type: 'positive',
         message: 'Employee created successfully',
@@ -714,6 +791,17 @@ onMounted(async () => {
   justify-content: flex-end;
   gap: var(--spacing-3);
   margin-top: var(--spacing-5);
+}
+
+.full-width {
+  width: 100%;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
 }
 
 .cancel-btn {

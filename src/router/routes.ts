@@ -59,6 +59,48 @@ const routes: RouteRecordRaw[] = [
         name: 'super-admin-companies',
         meta: { title: 'Manage Companies' },
       },
+      {
+        path: 'companies/:id',
+        component: () => import('pages/super-admin/CompanyDetailPage.vue'),
+        name: 'super-admin-company-detail',
+        meta: { title: 'Company Details' },
+      },
+      {
+        path: 'users',
+        component: () => import('pages/super-admin/UsersPage.vue'),
+        name: 'super-admin-users',
+        meta: { title: 'Platform Users' },
+      },
+      {
+        path: 'analytics',
+        component: () => import('pages/super-admin/AnalyticsPage.vue'),
+        name: 'super-admin-analytics',
+        meta: { title: 'Analytics' },
+      },
+      {
+        path: 'billing',
+        component: () => import('pages/super-admin/BillingPage.vue'),
+        name: 'super-admin-billing',
+        meta: { title: 'Billing' },
+      },
+      {
+        path: 'support',
+        component: () => import('pages/super-admin/SupportPage.vue'),
+        name: 'super-admin-support',
+        meta: { title: 'Support Tickets' },
+      },
+      {
+        path: 'support/:id',
+        component: () => import('pages/super-admin/TicketDetailPage.vue'),
+        name: 'super-admin-ticket-detail',
+        meta: { title: 'Ticket Details' },
+      },
+      {
+        path: 'settings',
+        component: () => import('pages/super-admin/SettingsPage.vue'),
+        name: 'super-admin-settings',
+        meta: { title: 'Platform Settings' },
+      },
     ],
   },
 
@@ -163,6 +205,38 @@ const routes: RouteRecordRaw[] = [
         component: () => import('pages/payroll/StructurePage.vue'),
         name: 'payroll-structure',
         meta: { title: 'Salary Structure' },
+      },
+      {
+        path: 'payroll/manage',
+        component: () => import('pages/payroll/ManagePage.vue'),
+        name: 'payroll-manage',
+        meta: { title: 'Payroll Management' },
+      },
+      {
+        path: 'payroll/salary-builder',
+        component: () => import('pages/payroll/SalaryStructureBuilderPage.vue'),
+        name: 'payroll-salary-builder',
+        meta: { title: 'Salary Structure Builder' },
+      },
+
+      // Reports
+      {
+        path: 'reports',
+        component: () => import('pages/reports/IndexPage.vue'),
+        name: 'reports',
+        meta: { title: 'Reports' },
+      },
+      {
+        path: 'reports/t10-certificate',
+        component: () => import('pages/reports/T10CertificatePage.vue'),
+        name: 'reports-t10-certificate',
+        meta: { title: 'T10 Certificate (APIT)' },
+      },
+      {
+        path: 'reports/epf-etf',
+        component: () => import('pages/reports/EpfEtfFormsPage.vue'),
+        name: 'reports-epf-etf',
+        meta: { title: 'EPF & ETF Forms' },
       },
 
       // Claims

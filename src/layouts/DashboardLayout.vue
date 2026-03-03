@@ -257,6 +257,34 @@
               <router-link to="/payroll/structure" class="nav-sublink" :class="{ active: isActiveRoute('/payroll/structure') }">
                 Salary Structure
               </router-link>
+              <router-link v-if="isAdmin" to="/payroll/manage" class="nav-sublink" :class="{ active: isActiveRoute('/payroll/manage') }">
+                Payroll Management
+              </router-link>
+              <router-link v-if="isAdmin" to="/payroll/salary-builder" class="nav-sublink" :class="{ active: isActiveRoute('/payroll/salary-builder') }">
+                Structure Builder
+              </router-link>
+            </div>
+          </div>
+
+          <!-- Reports -->
+          <div class="nav-group" :class="{ expanded: isReportsSectionOpen }">
+            <button class="nav-group-header" @click="toggleSection('reports')">
+              <span class="nav-icon">
+                <q-icon name="assessment" size="20px" />
+              </span>
+              <span v-if="!sidebarMini" class="nav-label">Reports</span>
+              <q-icon v-if="!sidebarMini" :name="isReportsSectionOpen ? 'expand_less' : 'expand_more'" size="18px" class="nav-arrow" />
+            </button>
+            <div v-if="!sidebarMini && isReportsSectionOpen" class="nav-group-items">
+              <router-link to="/reports" class="nav-sublink" :class="{ active: isActiveRoute('/reports', true) }">
+                All Reports
+              </router-link>
+              <router-link to="/reports/t10-certificate" class="nav-sublink" :class="{ active: isActiveRoute('/reports/t10-certificate') }">
+                T10 Certificate (APIT)
+              </router-link>
+              <router-link to="/reports/epf-etf" class="nav-sublink" :class="{ active: isActiveRoute('/reports/epf-etf') }">
+                EPF & ETF Forms
+              </router-link>
             </div>
           </div>
 
@@ -370,6 +398,7 @@ const expandedSections = reactive({
   attendance: false,
   leave: false,
   payroll: false,
+  reports: false,
   claims: false,
   settings: false,
 });
@@ -395,6 +424,7 @@ const isEmployeesSectionOpen = computed(() => expandedSections.employees);
 const isAttendanceSectionOpen = computed(() => expandedSections.attendance);
 const isLeaveSectionOpen = computed(() => expandedSections.leave);
 const isPayrollSectionOpen = computed(() => expandedSections.payroll);
+const isReportsSectionOpen = computed(() => expandedSections.reports);
 const isClaimsSectionOpen = computed(() => expandedSections.claims);
 const isSettingsSectionOpen = computed(() => expandedSections.settings);
 

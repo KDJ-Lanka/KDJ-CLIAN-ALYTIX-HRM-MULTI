@@ -12,12 +12,17 @@
         <q-table :rows="paySlips" :columns="columns" row-key="id" flat :loading="loading">
           <template v-slot:body-cell-period="props">
             <q-td :props="props">
-              {{ formatMonth(props.row.pay_period_month) }} {{ props.row.pay_period_year }}
+              {{ formatMonth(props.row.period_month) }} {{ props.row.period_year }}
             </q-td>
           </template>
           <template v-slot:body-cell-net_salary="props">
             <q-td :props="props">
               <span class="text-weight-bold">{{ formatCurrency(props.row.net_salary) }}</span>
+            </q-td>
+          </template>
+          <template v-slot:body-cell-status="props">
+            <q-td :props="props">
+              <q-badge :color="getStatusColor(props.row.status)" :label="capitalize(props.row.status)" />
             </q-td>
           </template>
           <template v-slot:body-cell-actions="props">
@@ -43,7 +48,7 @@
     <q-dialog v-model="detailDialog">
       <q-card class="payslip-dialog">
         <q-card-section class="dialog-header">
-          <div class="text-h6">Pay Slip - {{ selectedSlip ? formatMonth(selectedSlip.pay_period_month) : '' }} {{ selectedSlip?.pay_period_year }}</div>
+          <div class="text-h6">Pay Slip - {{ selectedSlip ? formatMonth(selectedSlip.period_month) : '' }} {{ selectedSlip?.period_year }}</div>
         </q-card-section>
         <q-card-section v-if="selectedSlip">
           <div class="payslip-section">
@@ -53,39 +58,35 @@
             </div>
             <div class="payslip-row">
               <span class="label">Pay Period</span>
-              <span class="value">{{ formatMonth(selectedSlip.pay_period_month) }} {{ selectedSlip.pay_period_year }}</span>
+              <span class="value">{{ formatMonth(selectedSlip.period_month) }} {{ selectedSlip.period_year }}</span>
+            </div>
+            <div class="payslip-row">
+              <span class="label">Payment Date</span>
+              <span class="value">{{ selectedSlip.paid_at ? formatDate(selectedSlip.paid_at) : 'Pending' }}</span>
             </div>
           </div>
           <q-separator class="q-my-md" />
           <div class="payslip-section">
             <div class="section-title">Earnings</div>
-            <div class="payslip-row">
-              <span class="label">Basic Salary</span>
-              <span class="value">{{ formatCurrency(selectedSlip.basic_salary) }}</span>
-            </div>
-            <div class="payslip-row">
-              <span class="label">Allowances</span>
-              <span class="value">{{ formatCurrency(selectedSlip.allowances || 0) }}</span>
-            </div>
-            <div class="payslip-row">
-              <span class="label">Overtime</span>
-              <span class="value">{{ formatCurrency(selectedSlip.overtime_amount || 0) }}</span>
+            <div v-for="(amount, key) in selectedSlip.earnings" :key="key" class="payslip-row">
+              <span class="label">{{ formatComponentName(key) }}</span>
+              <span class="value">{{ formatCurrency(amount) }}</span>
             </div>
             <div class="payslip-row total">
-              <span class="label">Gross Salary</span>
-              <span class="value">{{ formatCurrency(selectedSlip.gross_salary) }}</span>
+              <span class="label">Total Earnings</span>
+              <span class="value">{{ formatCurrency(selectedSlip.total_earnings) }}</span>
             </div>
           </div>
           <q-separator class="q-my-md" />
           <div class="payslip-section">
             <div class="section-title">Deductions</div>
-            <div class="payslip-row">
-              <span class="label">Tax</span>
-              <span class="value text-negative">-{{ formatCurrency(selectedSlip.tax_deduction || 0) }}</span>
+            <div v-for="(amount, key) in selectedSlip.deductions" :key="key" class="payslip-row">
+              <span class="label">{{ formatComponentName(key) }}</span>
+              <span class="value text-negative">-{{ formatCurrency(amount) }}</span>
             </div>
-            <div class="payslip-row">
-              <span class="label">Other Deductions</span>
-              <span class="value text-negative">-{{ formatCurrency(selectedSlip.other_deductions || 0) }}</span>
+            <div class="payslip-row total">
+              <span class="label">Total Deductions</span>
+              <span class="value text-negative">-{{ formatCurrency(selectedSlip.total_deductions) }}</span>
             </div>
           </div>
           <q-separator class="q-my-md" />
@@ -118,6 +119,7 @@ const loading = ref(false);
 const paySlips = ref<PaySlip[]>([]);
 const detailDialog = ref(false);
 const selectedSlip = ref<PaySlip | null>(null);
+const downloading = ref(false);
 
 const columns = [
   { name: 'period', label: 'Period', field: 'period', align: 'left' as const },
@@ -128,8 +130,29 @@ const columns = [
   { name: 'actions', label: '', field: 'actions', align: 'right' as const },
 ];
 
-const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
-const formatMonth = (month: number) => ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][month];
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
+
+const formatMonth = (month: number) =>
+  ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][month];
+
+const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString();
+
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+const formatComponentName = (key: string) => {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+};
+
+const getStatusColor = (status: string) => {
+  const colors: Record<string, string> = {
+    draft: 'grey',
+    pending: 'orange',
+    paid: 'positive',
+    cancelled: 'negative',
+  };
+  return colors[status] || 'grey';
+};
 
 const fetchData = async () => {
   const employeeId = authStore.profile?.id;
@@ -146,9 +169,78 @@ const viewPaySlip = (slip: PaySlip) => {
   detailDialog.value = true;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const downloadPaySlip = (_slip?: PaySlip) => {
-  $q.notify({ type: 'info', message: 'Download feature coming soon' });
+const downloadPaySlip = (slip: PaySlip) => {
+  if (!slip) return;
+
+  downloading.value = true;
+  try {
+    const htmlContent = generatePayslipHtml(slip);
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `payslip-${slip.period_month}-${slip.period_year}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    downloading.value = false;
+    $q.notify({ type: 'positive', message: 'Pay slip downloaded successfully' });
+  } catch (error) {
+    console.error('Error generating pay slip:', error);
+    $q.notify({ type: 'negative', message: 'Failed to generate pay slip. Please try again.' });
+    downloading.value = false;
+  }
+};
+
+const generatePayslipHtml = (slip: PaySlip): string => {
+  const company = authStore.company as { name: string; logo_url?: string } | null;
+  const companyName = company?.name || 'Company';
+  const companyLogo = company?.logo_url;
+  const employeeName = authStore.profile?.full_name || 'Employee';
+  const employeeCode = authStore.employee?.employee_code || 'N/A';
+  const period = formatMonth(slip.period_month) + ' ' + slip.period_year;
+  const netSalary = formatCurrency(slip.net_salary);
+  const earningsRows = Object.entries(slip.earnings || {}).map(([key, amount]) =>
+    '<div class="detail-row"><span class="detail-label">' + formatComponentName(key) + '</span><span class="detail-value">' + formatCurrency(amount) + '</span></div>'
+  ).join('');
+  const deductionsRows = Object.entries(slip.deductions || {}).map(([key, amount]) =>
+    '<div class="detail-row"><span class="detail-label">' + formatComponentName(key) + '</span><span class="detail-value" style="color: #d32f2f;">-' + formatCurrency(amount) + '</span></div>'
+  ).join('');
+
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Payslip - ' + period + '</title>' +
+    '<style>* { margin: 0; padding: 0; box-sizing: border-box; }body { font-family: Inter, Arial, sans-serif; font-size: 12px; color: #333; line-height: 1.6; background: #f5f5f5; }.container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }.header { text-align: center; padding: 30px 20px; border-bottom: 2px solid #eee; }.company-logo { max-width: 80px; max-height: 80px; object-fit: contain; margin-bottom: 15px; }.company-name { font-size: 20px; font-weight: 700; color: #000; margin-bottom: 5px; }.payslip-title { font-size: 14px; color: #666; font-weight: 500; margin-bottom: 20px; }.payslip-period { font-size: 13px; color: #999; }.employee-info { display: flex; justify-content: space-between; padding: 20px; background: #f9f9f9; border-bottom: 1px solid #eee; }.info-item { flex: 1; }.info-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }.info-value { font-size: 14px; font-weight: 600; color: #000; margin-top: 4px; }.content { padding: 30px 20px; }.section-title { font-size: 14px; font-weight: 700; color: #000; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #000; text-transform: uppercase; letter-spacing: 1px; }.section { margin-bottom: 25px; }.detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }.detail-label { color: #666; font-size: 13px; }.detail-value { font-weight: 600; color: #000; }.total-row { display: flex; justify-content: space-between; padding: 15px 10px; background: #f5f5f5; font-weight: 700; }.net-salary-section { background: #000; color: #fff; padding: 25px; text-align: center; }.net-salary-label { font-size: 13px; opacity: 0.9; margin-bottom: 8px; }.net-salary-value { font-size: 28px; font-weight: 700; }.footer { text-align: center; padding: 20px; font-size: 11px; color: #999; border-top: 1px solid #eee; }@media print { .container { box-shadow: none; margin: 0; } }</style></head><body>' +
+    '<div class="container">' +
+      '<div class="header">' +
+        (companyLogo ? '<img src="' + companyLogo + '" class="company-logo" alt="Company Logo" />' : '') +
+        '<div class="company-name">' + companyName + '</div>' +
+        '<div class="payslip-title">PAYSLIP</div>' +
+        '<div class="payslip-period">' + period + '</div>' +
+      '</div>' +
+      '<div class="employee-info">' +
+        '<div class="info-item"><div class="info-label">Employee Name</div><div class="info-value">' + employeeName + '</div></div>' +
+        '<div class="info-item" style="text-align: center;"><div class="info-label">Employee ID</div><div class="info-value">' + employeeCode + '</div></div>' +
+        '<div class="info-item" style="text-align: right;"><div class="info-label">Generated On</div><div class="info-value">' + new Date().toLocaleDateString() + '</div></div>' +
+      '</div>' +
+      '<div class="content">' +
+        '<div class="section">' +
+          '<div class="section-title">Earnings</div>' +
+          earningsRows +
+          '<div class="total-row"><span class="detail-label">Total Earnings</span><span class="detail-value">' + formatCurrency(slip.total_earnings) + '</span></div>' +
+        '</div>' +
+        '<div class="section">' +
+          '<div class="section-title">Deductions</div>' +
+          deductionsRows +
+          '<div class="total-row"><span class="detail-label">Total Deductions</span><span class="detail-value" style="color: #d32f2f;">-' + formatCurrency(slip.total_deductions) + '</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="net-salary-section">' +
+        '<div class="net-salary-label">Net Salary (Take Home)</div>' +
+        '<div class="net-salary-value">' + netSalary + '</div>' +
+      '</div>' +
+      '<div class="footer">This is a computer-generated payslip. Generated on ' + new Date().toLocaleString() + '</div>' +
+    '</div>' +
+    '</body></html>';
 };
 
 onMounted(() => {
@@ -163,7 +255,7 @@ onMounted(() => {
 .page-subtitle { font-size: 14px; color: var(--color-gray-500); margin: 0; }
 .table-card { border-radius: var(--radius-lg); }
 .empty-state { display: flex; flex-direction: column; align-items: center; padding: var(--spacing-6); color: var(--color-gray-400); }
-.payslip-dialog { min-width: 450px; border-radius: var(--radius-xl); }
+.payslip-dialog { min-width: 500px; border-radius: var(--radius-xl); max-width: 90vw; }
 .dialog-header { border-bottom: 1px solid var(--color-gray-100); }
 .payslip-section { }
 .payslip-row { display: flex; justify-content: space-between; padding: var(--spacing-2) 0;
