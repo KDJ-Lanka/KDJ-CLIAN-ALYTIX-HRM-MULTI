@@ -328,7 +328,6 @@ const generateForms = async () => {
       : `${form.year}-${String(form.month + 1).padStart(2, '0')}-01`;
 
     // Fetch employees with their salary structures and pay slips
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: employeesData } = await (supabase
       .from('employees') as any)
       .select('id, employee_code, profiles!employees_profile_id_fkey(full_name, nic_number)')
@@ -351,11 +350,9 @@ const generateForms = async () => {
     let totalEmployerShare = 0;
     let totalEtfContribution = 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const employee of employeesData as any[]) {
       // Get pay slip for this employee
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const employeePaySlip = paySlips?.find((p: any) => p.employee_id === employee.id) as any;
+        const employeePaySlip = paySlips?.find((p: any) => p.employee_id === employee.id) as any;
       const basicSalary = employeePaySlip?.basic_salary || 0;
 
       // Calculate EPF contributions (8% employee, 12% employer)

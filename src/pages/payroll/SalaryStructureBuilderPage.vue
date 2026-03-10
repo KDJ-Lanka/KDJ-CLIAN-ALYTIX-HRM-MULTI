@@ -514,13 +514,11 @@ const fetchData = async () => {
   loading.value = true;
   try {
     // Fetch employees
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: empData } = await (supabase.from('employees') as any)
       .select('id, employee_code, profiles!employees_profile_id_fkey(full_name)')
       .eq('company_id', companyId)
       .eq('status', 'active');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     employees.value = (empData || []).map((e: any) => ({
       id: e.id,
       employee_code: e.employee_code,
@@ -620,7 +618,6 @@ const saveStructure = async () => {
       }
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('salary_structures') as any).insert({
       company_id: companyId,
       employee_id: builderForm.employee_id,
@@ -667,23 +664,15 @@ const editStructure = (structure: SalaryStructure) => {
   builderForm.is_active = structure.is_active;
 
   // Load allowances
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   builderForm.allowances.hra = (structure as any).hra || 0;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   builderForm.allowances.da = (structure as any).da || 0;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   builderForm.allowances.conveyance = (structure as any).conveyance_allowance || 0;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   builderForm.allowances.medical = (structure as any).medical_allowance || 0;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   builderForm.allowances.special = (structure as any).special_allowance || 0;
 
   // Load deductions
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   builderForm.deductions.provident_fund = (structure as any).pf || 0;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   builderForm.deductions.professional_tax = (structure as any).professional_tax || 0;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   builderForm.deductions.income_tax = (structure as any).tax_deduction || 0;
 
   // Load custom components
@@ -706,8 +695,7 @@ const confirmDelete = (structure: SalaryStructure) => {
     persistent: true,
   }).onOk(async () => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('salary_structures') as any).delete().eq('id', structure.id);
+        await (supabase.from('salary_structures') as any).delete().eq('id', structure.id);
       $q.notify({ type: 'positive', message: 'Salary structure deleted' });
       void fetchData();
     } catch (error) {

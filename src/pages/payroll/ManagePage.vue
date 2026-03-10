@@ -491,7 +491,6 @@ const employees = ref<Employee[]>([]);
 
 // Permission checks
 const canView = computed(() => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adminData = authStore.companyAdmin as any;
   const role = adminData?.role;
   const permissions = adminData?.permissions as string[] | undefined;
@@ -501,7 +500,6 @@ const canView = computed(() => {
 });
 
 const canManage = computed(() => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adminData = authStore.companyAdmin as any;
   const role = adminData?.role;
   const permissions = adminData?.permissions as string[] | undefined;
@@ -639,14 +637,12 @@ const fetchData = async () => {
   loading.value = true;
   try {
     // Fetch employees
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: empData } = await (supabase.from('employees') as any)
+      const { data: empData } = await (supabase.from('employees') as any)
       .select('id, employee_code, profiles!employees_profile_id_fkey(full_name)')
       .eq('company_id', companyId)
       .eq('status', 'active');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    employees.value = (empData || []).map((e: any) => ({
+      employees.value = (empData || []).map((e: any) => ({
       id: e.id,
       employee_code: e.employee_code,
       profile: e.profiles,
@@ -714,8 +710,7 @@ const saveStructure = async () => {
   saving.value = true;
   try {
     if (editingStructure.value) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('salary_structures') as any)
+          await (supabase.from('salary_structures') as any)
         .update({
           name: structureForm.name,
           gross_salary: structureForm.gross_salary,
@@ -727,8 +722,7 @@ const saveStructure = async () => {
         .eq('id', editingStructure.value.id);
       $q.notify({ type: 'positive', message: 'Salary structure updated' });
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('salary_structures') as any).insert({
+          await (supabase.from('salary_structures') as any).insert({
         company_id: companyId,
         employee_id: structureForm.employee_id,
         name: structureForm.name,
@@ -784,8 +778,7 @@ const runPayroll = async () => {
   saving.value = true;
   try {
     // Create payroll period
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: periodData, error: periodError } = await (supabase
+      const { data: periodData, error: periodError } = await (supabase
       .from('payroll_periods') as any)
       .insert({
         company_id: companyId,
@@ -803,8 +796,7 @@ const runPayroll = async () => {
     if (periodError) throw periodError;
 
     // Get active salary structures
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: structures } = await (supabase
+      const { data: structures } = await (supabase
       .from('salary_structures') as any)
       .select('*, employees(id)')
       .eq('company_id', companyId)
@@ -812,8 +804,7 @@ const runPayroll = async () => {
 
     if (structures && structures.length > 0) {
       // Create pay slips for each employee
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const paySlipsToCreate = structures.map((s: any) => ({
+          const paySlipsToCreate = structures.map((s: any) => ({
         company_id: companyId,
         employee_id: (s.employees as { id: string }).id,
         payroll_period_id: (periodData as { id: string }).id,
@@ -829,19 +820,15 @@ const runPayroll = async () => {
         status: 'draft',
       }));
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('pay_slips') as any).insert(paySlipsToCreate);
+          await (supabase.from('pay_slips') as any).insert(paySlipsToCreate);
 
       // Update period totals
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase
+          await (supabase
         .from('payroll_periods') as any)
         .update({
           total_employees: structures.length,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          total_gross: structures.reduce((sum: number, s: any) => sum + (s.gross_salary || 0), 0),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          total_net: structures.reduce((sum: number, s: any) => sum + (s.net_salary || 0), 0),
+                  total_gross: structures.reduce((sum: number, s: any) => sum + (s.gross_salary || 0), 0),
+                  total_net: structures.reduce((sum: number, s: any) => sum + (s.net_salary || 0), 0),
         })
         .eq('id', (periodData as { id: string }).id);
     }
@@ -866,8 +853,7 @@ const approvePayroll = (period: PayrollPeriod) => {
     void (async () => {
       try {
         // Update period status
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase
+              await (supabase
           .from('payroll_periods') as any)
           .update({
             status: 'paid',
@@ -877,8 +863,7 @@ const approvePayroll = (period: PayrollPeriod) => {
           .eq('id', period.id);
 
         // Update all pay slips in this period
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase
+              await (supabase
           .from('pay_slips') as any)
           .update({
             status: 'paid',

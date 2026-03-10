@@ -70,7 +70,6 @@ const fetchTodayAttendance = async () => {
   if (!employeeId || !companyId) return;
 
   const today = new Date().toISOString().split('T')[0] as string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data }: any = await supabase
     .from('attendance')
     .select('*')

@@ -214,7 +214,6 @@ const fetchEmployees = async () => {
       .eq('company_id', companyId)
       .eq('status', 'active');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     employees.value = (data || []) as any[];
   } catch (error) {
     console.error('Error fetching employees:', error);
@@ -256,24 +255,18 @@ const generateCertificate = async () => {
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const monthly_deductions = monthNames.map((month, index) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const monthData = payrollData?.find((p: any) => {
+        const monthData = payrollData?.find((p: any) => {
         const monthNum = new Date(p.pay_period).getMonth();
         return monthNum === index;
       });
 
       return {
         month,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        basic_salary: (monthData as any)?.basic_salary || 0,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        taxable_income: (monthData as any)?.gross_salary || 0,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apit_rate: (monthData as any)?.tax_deduction ? Math.round(((monthData as any).tax_deduction / (monthData as any).gross_salary) * 100) : 0,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apit_deduction: (monthData as any)?.tax_deduction || 0,
+            basic_salary: (monthData as any)?.basic_salary || 0,
+            taxable_income: (monthData as any)?.gross_salary || 0,
+            apit_rate: (monthData as any)?.tax_deduction ? Math.round(((monthData as any).tax_deduction / (monthData as any).gross_salary) * 100) : 0,
+            apit_deduction: (monthData as any)?.tax_deduction || 0,
       };
     });
 

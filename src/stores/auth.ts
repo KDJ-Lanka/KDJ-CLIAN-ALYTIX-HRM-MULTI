@@ -90,7 +90,6 @@ export const useAuthStore = defineStore('auth', {
         // Fetch company
         const profileData = profile as { company_id?: string; id?: string } | null;
         if (profileData?.company_id) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const companyResult: any = await supabase
             .from('companies')
             .select('*')
@@ -104,7 +103,6 @@ export const useAuthStore = defineStore('auth', {
 
           // Fetch employee record using the profile's id
           if (this.profile?.id) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const employeeResult: any = await supabase
               .from('employees')
               .select('*')
@@ -117,7 +115,6 @@ export const useAuthStore = defineStore('auth', {
           }
 
           // Check if user is company admin
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const adminResult: any = await supabase
             .from('company_admins')
             .select('*')
