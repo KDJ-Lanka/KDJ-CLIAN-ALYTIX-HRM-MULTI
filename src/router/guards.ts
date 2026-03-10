@@ -45,6 +45,11 @@ export function authGuard(
     });
   } else if (isGuestRoute && hasSession) {
     // Redirect to dashboard if user has session and tries to access guest routes
+    // Exception: allow super admin login page even with session
+    if (to.path === '/super-admin/login') {
+      next();
+      return;
+    }
     next({ path: '/dashboard' });
   } else {
     next();

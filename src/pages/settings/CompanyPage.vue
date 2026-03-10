@@ -291,7 +291,6 @@ const uploadLogo = async (file: File) => {
     const logoUrl = urlData.publicUrl;
 
     // Update company record
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase
       .from('companies') as any)
       .update({ logo_url: logoUrl })
@@ -331,7 +330,6 @@ const removeLogo = async () => {
     }
 
     // Update company record
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase
       .from('companies') as any)
       .update({ logo_url: null })
@@ -364,10 +362,32 @@ const saveCompany = async () => {
 
   saving.value = true;
   try {
-    await supabase.from('companies').update(form as never).eq('id', companyId);
+    // Only send fields that exist in the companies table
+    const { error } = await supabase
+      .from('companies')
+      .update({
+        name: form.name,
+        slug: form.slug,
+        email: form.email,
+        phone: form.phone,
+        website: form.website,
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        country: form.country,
+        postal_code: form.postal_code,
+        logo_url: form.logo_url,
+      } as never)
+      .eq('id', companyId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
     await authStore.fetchProfile();
     $q.notify({ type: 'positive', message: 'Company settings saved' });
-  } catch {
+  } catch (error) {
+    console.error('Save error:', error);
     $q.notify({ type: 'negative', message: 'Failed to save settings' });
   } finally {
     saving.value = false;
