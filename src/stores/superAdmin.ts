@@ -342,20 +342,11 @@ export const useSuperAdminStore = defineStore('superAdmin', {
     ) {
       this.usersLoading = true;
       try {
+        // Use the database view to get all user data in a single query
+        // The view handles the JOIN between profiles, companies, and employees
         let query = supabase
-          .from('profiles')
-          .select(
-            `
-            id,
-            email,
-            full_name,
-            company_id,
-            created_at,
-            companies ( name ),
-            employees ( status )
-          `,
-            { count: 'exact' }
-          )
+          .from('super_admin_users_view')
+          .select('*', { count: 'exact' })
           .order('created_at', { ascending: false });
 
         if (filters.search) {
@@ -363,6 +354,9 @@ export const useSuperAdminStore = defineStore('superAdmin', {
         }
         if (filters.company_id) {
           query = query.eq('company_id', filters.company_id);
+        }
+        if (filters.status) {
+          query = query.eq('employee_status', filters.status);
         }
 
         const from = (pagination.page - 1) * pagination.rowsPerPage;
@@ -378,16 +372,16 @@ export const useSuperAdminStore = defineStore('superAdmin', {
             full_name?: string;
             company_id?: string;
             created_at: string;
-            companies?: { name?: string };
-            employees?: { status?: string };
+            company_name?: string;
+            employee_status?: string;
           }>;
           this.users = typedData.map((u) => ({
             id: u.id,
             email: u.email,
             full_name: u.full_name,
             company_id: u.company_id,
-            company_name: u.companies?.name || 'N/A',
-            status: u.employees?.status || 'active',
+            company_name: u.company_name || 'N/A',
+            status: u.employee_status || 'active',
             created_at: u.created_at,
           }));
           this.usersPagination = {
@@ -402,17 +396,10 @@ export const useSuperAdminStore = defineStore('superAdmin', {
     },
 
     async fetchUserDetails(userId: string) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(
-          `
-          *,
-          companies ( name, email, phone ),
-          employees ( * )
-        `
-        )
-        .eq('id', userId)
-        .single();
+      // Use RPC function to fetch user details with company and employee info
+      const { data, error } = await (supabase.rpc as any)('get_user_details', {
+        user_id: userId,
+      });
 
       if (!error && data) {
         return data;
