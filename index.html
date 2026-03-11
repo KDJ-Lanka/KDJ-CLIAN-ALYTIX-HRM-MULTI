@@ -20,5 +20,26 @@
   </head>
   <body>
     <!-- quasar:entry-point -->
+    <script>
+      // Handle hash mode routing for direct URL access on Vercel/deployment
+      (function() {
+        // Only redirect if there's no hash but there's a non-root path
+        if (!window.location.hash && window.location.pathname && window.location.pathname !== '/') {
+          const path = window.location.pathname;
+          const search = window.location.search || '';
+
+          // Build the hash URL
+          let hashPath = path;
+
+          // For super-admin routes without hash, redirect appropriately
+          if (path === '/super-admin' || path === '/super-admin/') {
+            hashPath = '/super-admin/login';
+          }
+
+          // Perform the redirect to hash-based URL
+          window.location.replace('/#' + hashPath + search);
+        }
+      })();
+    </script>
   </body>
 </html>
