@@ -37,21 +37,26 @@ export function authGuard(
     return;
   }
 
+  // Check for guest routes first (except super admin login)
+  if (isGuestRoute && hasSession) {
+    // Exception: allow super admin login page even with session
+    if (to.path === '/super-admin/login') {
+      next();
+      return;
+    }
+    // Redirect to dashboard if user has session and tries to access guest routes
+    next({ path: '/dashboard' });
+    return;
+  }
+
   if (requiresAuth && !hasSession) {
     // Redirect to login if route requires auth and no session
     next({
       path: '/auth/login',
       query: { redirect: to.fullPath },
     });
-  } else if (isGuestRoute && hasSession) {
-    // Redirect to dashboard if user has session and tries to access guest routes
-    // Exception: allow super admin login page even with session
-    if (to.path === '/super-admin/login') {
-      next();
-      return;
-    }
-    next({ path: '/dashboard' });
-  } else {
-    next();
+    return;
   }
+
+  next();
 }
