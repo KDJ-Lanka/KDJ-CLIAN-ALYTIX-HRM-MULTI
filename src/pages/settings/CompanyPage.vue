@@ -170,8 +170,8 @@ const form = reactive({
   state: '',
   country: '',
   postal_code: '',
-  currency: 'USD',
-  timezone: 'UTC',
+  currency: 'LKR',
+  timezone: 'Asia/Colombo',
   date_format: 'MM/DD/YYYY',
   work_start_time: '09:00',
   work_end_time: '18:00',
@@ -179,6 +179,7 @@ const form = reactive({
 });
 
 const currencyOptions = [
+  { label: 'LKR (Rs)', value: 'LKR' },
   { label: 'USD ($)', value: 'USD' },
   { label: 'EUR (€)', value: 'EUR' },
   { label: 'GBP (£)', value: 'GBP' },
@@ -186,6 +187,7 @@ const currencyOptions = [
 ];
 
 const timezoneOptions = [
+  { label: 'Asia/Colombo (Sri Lanka)', value: 'Asia/Colombo' },
   { label: 'UTC', value: 'UTC' },
   { label: 'Eastern Time (ET)', value: 'America/New_York' },
   { label: 'Pacific Time (PT)', value: 'America/Los_Angeles' },
@@ -214,8 +216,8 @@ const fetchCompany = () => {
     state: company.state || '',
     country: company.country || '',
     postal_code: company.postal_code || '',
-    currency: company.currency || 'USD',
-    timezone: company.timezone || 'UTC',
+    currency: company.currency || 'LKR',
+    timezone: company.timezone || 'Asia/Colombo',
     date_format: company.date_format || 'MM/DD/YYYY',
     work_start_time: company.work_start_time || '09:00',
     work_end_time: company.work_end_time || '18:00',

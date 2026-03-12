@@ -188,6 +188,8 @@ export const useAuthStore = defineStore('auth', {
             email: data.companyEmail,
             phone: data.companyPhone,
             address: data.companyAddress,
+            currency_code: 'LKR',
+            timezone: 'Asia/Colombo',
           } as never)
           .select()
           .single();

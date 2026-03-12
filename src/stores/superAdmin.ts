@@ -71,8 +71,8 @@ export interface SubscriptionPlan {
   name: string;
   display_name: string;
   description?: string;
-  price_monthly: number;
-  price_yearly: number;
+  price_monthly: string;
+  price_yearly: string;
   currency: string;
   max_employees: number;
   max_storage_mb: number;
@@ -498,7 +498,7 @@ export const useSuperAdminStore = defineStore('superAdmin', {
 
         const typedPlans = plans as SubscriptionPlan[] | null;
         typedPlans?.forEach((p) => {
-          planPrices[p.name] = p.price_monthly;
+          planPrices[p.name] = parseFloat(p.price_monthly);
         });
 
         const typedCompanies = companies as Array<{ subscription_plan?: string; subscription_status?: string }> | null;

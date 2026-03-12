@@ -136,7 +136,7 @@ const calculateDeductions = computed(() => {
   );
 });
 
-const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
+const formatCurrency = (amount: number) => new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(amount || 0);
 
 const fetchData = async () => {
   const employeeId = authStore.profile?.id;

@@ -59,7 +59,7 @@
             <q-icon name="attach_money" size="24px" />
           </div>
           <div class="stat-content">
-            <div class="stat-value">${{ formatNumber(stats?.totalRevenue || 0) }}</div>
+            <div class="stat-value">Rs {{ formatNumber(stats?.totalRevenue || 0) }}</div>
             <div class="stat-label">Monthly Revenue</div>
           </div>
         </q-card-section>

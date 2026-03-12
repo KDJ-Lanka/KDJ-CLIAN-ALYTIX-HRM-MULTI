@@ -64,7 +64,7 @@
         <q-card-section>
           <q-form @submit="saveClaim">
             <q-select v-model="form.claim_type" :options="claimTypes" label="Claim Type *" outlined dense class="q-mb-md" :rules="[v => !!v || 'Required']" />
-            <q-input v-model.number="form.amount" label="Amount ($) *" type="number" step="0.01" outlined dense class="q-mb-md" :rules="[v => v > 0 || 'Enter valid amount']" />
+            <q-input v-model.number="form.amount" label="Amount (Rs) *" type="number" step="0.01" outlined dense class="q-mb-md" :rules="[v => v > 0 || 'Enter valid amount']" />
             <q-input v-model="form.description" label="Description *" outlined dense autogrow class="q-mb-md" :rules="[v => !!v || 'Required']" />
             <q-input v-model="form.claim_date" label="Date *" type="date" outlined dense class="q-mb-md" :rules="[v => !!v || 'Required']" />
             <div class="flex justify-end gap-3">
@@ -113,7 +113,7 @@ const columns = [
 ];
 
 const getStatusColor = (status: string) => ({ pending: 'warning', approved: 'positive', rejected: 'negative', paid: 'blue' }[status] || 'grey');
-const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
+const formatCurrency = (amount: number) => new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(amount || 0);
 
 const fetchData = async () => {
   const employeeId = authStore.profile?.id;

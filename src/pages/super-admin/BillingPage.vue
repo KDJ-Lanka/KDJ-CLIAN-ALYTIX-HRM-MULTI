@@ -21,7 +21,7 @@
               <q-icon name="payments" size="24px" />
             </div>
             <div class="revenue-content">
-              <span class="revenue-value">${{ formatCurrency(billing?.mrr || 0) }}</span>
+              <span class="revenue-value">Rs {{ formatCurrency(billing?.mrr || 0) }}</span>
               <span class="revenue-label">Monthly Recurring Revenue</span>
             </div>
           </q-card-section>
@@ -33,7 +33,7 @@
               <q-icon name="trending_up" size="24px" />
             </div>
             <div class="revenue-content">
-              <span class="revenue-value">${{ formatCurrency(billing?.totalRevenue || 0) }}</span>
+              <span class="revenue-value">Rs {{ formatCurrency(billing?.totalRevenue || 0) }}</span>
               <span class="revenue-label">Annual Revenue (Projected)</span>
             </div>
           </q-card-section>
@@ -82,7 +82,7 @@
               <div class="plan-header">
                 <span class="plan-name">{{ plan.display_name }}</span>
                 <span class="plan-price">
-                  ${{ plan.price_monthly }}
+                  {{ formatPlanCurrency(plan.price_monthly, plan.currency) }}
                   <span class="price-period">/month</span>
                 </span>
               </div>
@@ -181,6 +181,14 @@ const formatCurrency = (num: number): string => {
     return (num / 1000).toFixed(1) + 'K';
   }
   return num.toFixed(0);
+};
+
+const formatPlanCurrency = (amount: string, currency: string): string => {
+  const num = parseFloat(amount);
+  if (currency === 'LKR') {
+    return new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', minimumFractionDigits: 0 }).format(num);
+  }
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency, minimumFractionDigits: 0 }).format(num);
 };
 
 const capitalize = (str: string): string => {

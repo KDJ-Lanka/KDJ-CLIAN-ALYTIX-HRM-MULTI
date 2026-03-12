@@ -77,7 +77,7 @@ const columns = [
 ];
 
 const getStatusColor = (status: string) => ({ pending: 'warning', approved: 'positive', rejected: 'negative', paid: 'blue' }[status] || 'grey');
-const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
+const formatCurrency = (amount: number) => new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(amount || 0);
 const getInitials = (name: string) => name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?';
 
 const fetchData = async () => {

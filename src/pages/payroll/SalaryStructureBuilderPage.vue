@@ -464,7 +464,7 @@ const calculateTotalDeductions = computed(() => {
 const calculateNetSalary = computed(() => calculateTotalEarnings.value - calculateTotalDeductions.value);
 
 const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
+  new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(amount || 0);
 
 const formatComponentName = (key: string) => {
   return key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
