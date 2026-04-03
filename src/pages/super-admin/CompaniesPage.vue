@@ -322,7 +322,7 @@ const viewCompany = (company: Company) => {
   detailDialog.value = true;
 };
 
-const loginAsCompany = async (company: Company) => {
+const loginAsCompany = (company: Company) => {
   $q.dialog({
     title: 'Login as Company',
     message: `You will be logged out of super admin and logged in as an admin of "${company.name}". Continue?`,
@@ -376,16 +376,16 @@ const loginAsCompany = async (company: Company) => {
       localStorage.setItem('loginAsCompany', company.id);
 
       // Redirect to login with pre-filled email
-      router.push({
+      void router.push({
         path: '/auth/login',
-        query: { email: (adminUser as Record<string, unknown>).users?.email || '' },
+        query: { email: ((adminUser as Record<string, unknown>).users as Record<string, unknown> | undefined)?.email as string || '' },
       });
 
       $q.notify({
         type: 'info',
         message: 'Please enter the password for this company account.',
       });
-    } catch (error) {
+    } catch {
       $q.notify({
         type: 'negative',
         message: 'Failed to login as company',

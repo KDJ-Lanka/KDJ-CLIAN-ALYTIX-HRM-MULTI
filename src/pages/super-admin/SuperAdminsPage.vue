@@ -172,8 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { supabase } from 'src/boot/supabase';
 
@@ -190,7 +189,6 @@ interface SuperAdmin {
 }
 
 const $q = useQuasar();
-const router = useRouter();
 
 const loading = ref(false);
 const saving = ref(false);
@@ -340,7 +338,7 @@ const resetPassword = async (admin: SuperAdmin) => {
 
   try {
     // Update auth user password (requires admin privileges)
-    const { error } = await supabase.rpc('update_user_password', {
+    const { error } = await (supabase.rpc as any)('update_user_password', {
       user_id: admin.user_id,
       new_password: newPassword,
     });
@@ -382,28 +380,30 @@ const toggleActive = async (admin: SuperAdmin) => {
   }
 };
 
-const deleteAdmin = async (admin: SuperAdmin) => {
+const deleteAdmin = (admin: SuperAdmin) => {
   $q.dialog({
     title: 'Confirm Delete',
     message: `Are you sure you want to delete ${admin.email}?`,
     cancel: true,
     persistent: true,
-  }).onOk(async () => {
-    try {
-      // Delete from super_admins
-      const { error: dbError } = await supabase.from('super_admins').delete().eq('id', admin.id);
-      if (dbError) throw dbError;
+  }).onOk(() => {
+    void (async () => {
+      try {
+        // Delete from super_admins
+        const { error: dbError } = await supabase.from('super_admins').delete().eq('id', admin.id);
+        if (dbError) throw dbError;
 
-      // Delete from auth
-      const { error: authError } = await supabase.rpc('admin_delete_user', { user_id: admin.user_id });
-      if (authError) throw authError;
+        // Delete from auth
+        const { error: authError } = await (supabase.rpc as any)('admin_delete_user', { user_id: admin.user_id });
+        if (authError) throw authError;
 
-      await fetchAdmins();
-      $q.notify({ type: 'positive', message: 'Admin deleted' });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Delete failed';
-      $q.notify({ type: 'negative', message });
-    }
+        await fetchAdmins();
+        $q.notify({ type: 'positive', message: 'Admin deleted' });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Delete failed';
+        $q.notify({ type: 'negative', message });
+      }
+    })();
   });
 };
 

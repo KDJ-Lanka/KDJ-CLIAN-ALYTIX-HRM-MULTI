@@ -275,16 +275,20 @@ const loadGrowthData = async () => {
     months.push(d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
   }
 
+  interface GrowthData {
+    created_at: string;
+  }
+
   growthData.value = months.map(month => {
     const monthStart = new Date(month);
     const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
 
-    const companies = (companyGrowth || []).filter(c => {
+    const companies = (companyGrowth as GrowthData[] || []).filter(c => {
       const date = new Date(c.created_at);
       return date >= monthStart && date <= monthEnd;
     }).length;
 
-    const employees = (employeeGrowth || []).filter(e => {
+    const employees = (employeeGrowth as GrowthData[] || []).filter(e => {
       const date = new Date(e.created_at);
       return date >= monthStart && date <= monthEnd;
     }).length;

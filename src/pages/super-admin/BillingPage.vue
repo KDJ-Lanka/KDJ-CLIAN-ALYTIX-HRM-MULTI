@@ -161,8 +161,8 @@
         <q-separator />
 
         <q-card-section class="q-pa-md">
-          <div class="row q-col-gutter-md">
-            <div class="col-12" class="text-right">
+          <div class="row q-col-gutter-md justify-end">
+            <div class="col-12 text-right">
               <q-btn
                 unelevated
                 label="Add New Plan"
@@ -514,7 +514,7 @@ const togglePlanActive = async (plan: any) => {
     if (error) throw error;
     await superAdminStore.fetchBillingData();
     $q.notify({ type: 'positive', message: `Plan ${plan.is_active ? 'deactivated' : 'activated'}` });
-  } catch (error: unknown) {
+  } catch {
     $q.notify({ type: 'negative', message: 'Failed to update plan' });
   }
 };
@@ -533,7 +533,7 @@ const setPopularPlan = async (plan: any) => {
     if (error) throw error;
     await superAdminStore.fetchBillingData();
     $q.notify({ type: 'positive', message: 'Plan set as popular' });
-  } catch (error: unknown) {
+  } catch {
     $q.notify({ type: 'negative', message: 'Failed to update plan' });
   }
 };
@@ -548,7 +548,7 @@ const unsetPopularPlan = async (plan: any) => {
     if (error) throw error;
     await superAdminStore.fetchBillingData();
     $q.notify({ type: 'positive', message: 'Popular plan unset' });
-  } catch (error: unknown) {
+  } catch {
     $q.notify({ type: 'negative', message: 'Failed to update plan' });
   }
 };
@@ -586,7 +586,6 @@ const capitalize = (str: string): string => {
 
 onMounted(() => {
   void loadBillingData();
-});
 });
 </script>
 
@@ -827,13 +826,6 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-</style>
-}
-
-.companies-count {
-  font-size: 13px;
-  color: #737373;
 }
 
 .no-data {
