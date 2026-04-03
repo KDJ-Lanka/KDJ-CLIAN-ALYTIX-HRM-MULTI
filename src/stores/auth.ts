@@ -77,6 +77,18 @@ export const useAuthStore = defineStore('auth', {
       if (!this.user) return;
 
       try {
+        // Check if this user is a super admin (no profile needed)
+        const { data: superAdminCheck } = await supabase
+          .from('super_admins')
+          .select('id')
+          .eq('user_id', this.user.id)
+          .maybeSingle();
+
+        // If user is a super admin, skip profile fetch
+        if (superAdminCheck) {
+          return;
+        }
+
         // Fetch profile
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
