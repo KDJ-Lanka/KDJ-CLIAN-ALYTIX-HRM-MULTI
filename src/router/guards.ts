@@ -1,10 +1,8 @@
-import type { RouteLocationNormalized, NavigationGuardNext } from 'vue-router';
+import type { RouteLocationNormalized, NavigationGuardReturn } from 'vue-router';
 
 export function authGuard(
-  to: RouteLocationNormalized,
-  from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) {
+  to: RouteLocationNormalized
+): NavigationGuardReturn {
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
   const requiresSuperAdmin = to.matched.some((record) => record.meta.requiresSuperAdmin);
   const isGuestRoute = to.matched.some((record) => record.meta.guest);
@@ -21,42 +19,35 @@ export function authGuard(
       // If already logged in as super admin, redirect to dashboard
       const superAdminAuth = localStorage.getItem('superAdminAuth');
       if (superAdminAuth === 'true') {
-        next({ path: '/super-admin/dashboard' });
-        return;
+        return { path: '/super-admin/dashboard' };
       }
-      next();
-      return;
+      return true;
     }
     // For other super admin routes, check if super admin is authenticated
     const superAdminAuth = localStorage.getItem('superAdminAuth');
     if (superAdminAuth !== 'true') {
-      next({ path: '/super-admin/login' });
-      return;
+      return { path: '/super-admin/login' };
     }
-    next();
-    return;
+    return true;
   }
 
   // Check for guest routes first (except super admin login)
   if (isGuestRoute && hasSession) {
     // Exception: allow super admin login page even with session
     if (to.path === '/super-admin/login') {
-      next();
-      return;
+      return true;
     }
     // Redirect to dashboard if user has session and tries to access guest routes
-    next({ path: '/dashboard' });
-    return;
+    return { path: '/dashboard' };
   }
 
   if (requiresAuth && !hasSession) {
     // Redirect to login if route requires auth and no session
-    next({
+    return {
       path: '/auth/login',
       query: { redirect: to.fullPath },
-    });
-    return;
+    };
   }
 
-  next();
+  return true;
 }

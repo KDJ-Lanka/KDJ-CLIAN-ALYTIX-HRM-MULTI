@@ -283,7 +283,11 @@ const fetchUsers = async () => {
     page: pagination.value.page,
     rowsPerPage: pagination.value.rowsPerPage,
   });
-  pagination.value.rowsNumber = superAdminStore.usersPagination.rowsNumber;
+  // Update rowsNumber for server-side pagination
+  pagination.value = {
+    ...pagination.value,
+    rowsNumber: superAdminStore.usersPagination.rowsNumber,
+  };
 };
 
 const onRequest = async (props: { pagination: { page: number; rowsPerPage: number; sortBy: string; descending: boolean } }) => {
