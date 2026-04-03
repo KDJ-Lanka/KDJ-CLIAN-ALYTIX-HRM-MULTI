@@ -116,6 +116,7 @@ const navItems = [
   { path: '/super-admin/analytics', label: 'Analytics', icon: 'analytics' },
   { path: '/super-admin/billing', label: 'Billing', icon: 'receipt_long' },
   { path: '/super-admin/support', label: 'Support', icon: 'support_agent' },
+  { path: '/super-admin/admins', label: 'Admins', icon: 'admin_panel_settings' },
   { path: '/super-admin/settings', label: 'Settings', icon: 'settings' },
 ];
 

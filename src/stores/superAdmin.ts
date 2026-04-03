@@ -267,6 +267,7 @@ export const useSuperAdminStore = defineStore('superAdmin', {
           employees(count)
         `
         )
+        .is('deleted_at', null) // Exclude soft-deleted companies
         .order('created_at', { ascending: false });
 
       if (!error && data) {

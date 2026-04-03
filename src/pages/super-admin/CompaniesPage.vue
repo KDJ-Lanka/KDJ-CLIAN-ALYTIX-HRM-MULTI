@@ -231,11 +231,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useSuperAdminStore } from 'src/stores/superAdmin';
+import { supabase } from 'src/boot/supabase';
 import type { Company } from 'src/stores/superAdmin';
 
 const $q = useQuasar();
+const router = useRouter();
 const superAdminStore = useSuperAdminStore();
 
 const loading = ref(false);
@@ -319,10 +322,75 @@ const viewCompany = (company: Company) => {
   detailDialog.value = true;
 };
 
-const loginAsCompany = (company: Company) => {
-  $q.notify({
-    type: 'info',
-    message: `Login as ${company.name} - Feature coming soon`,
+const loginAsCompany = async (company: Company) => {
+  $q.dialog({
+    title: 'Login as Company',
+    message: `You will be logged out of super admin and logged in as an admin of "${company.name}". Continue?`,
+    cancel: true,
+    persistent: true,
+  }).onOk(async () => {
+    try {
+      // First, get a company admin user for this company
+      const { data: adminUser, error: adminError } = await supabase
+        .from('company_admins')
+        .select('user_id, users!inner(email)')
+        .eq('company_id', company.id)
+        .limit(1)
+        .single();
+
+      if (adminError || !adminUser) {
+        // Try to find any user from this company
+        const { data: anyUser, error: anyUserError } = await supabase
+          .from('profiles')
+          .select('user_id, email')
+          .eq('company_id', company.id)
+          .limit(1)
+          .single();
+
+        if (anyUserError || !anyUser) {
+          $q.notify({
+            type: 'warning',
+            message: 'No users found for this company. Cannot login.',
+          });
+          return;
+        }
+
+        $q.notify({
+          type: 'warning',
+          message: 'Company has no admin users. You can reset their password to login.',
+        });
+        return;
+      }
+
+      // Store super admin session for return
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        sessionStorage.setItem('superAdminReturnToken', session.access_token || '');
+        sessionStorage.setItem('superAdminReturnRefresh', session.refresh_token || '');
+      }
+
+      // Logout from super admin
+      await superAdminStore.logout();
+
+      // Set a flag to indicate we're logging in as company
+      localStorage.setItem('loginAsCompany', company.id);
+
+      // Redirect to login with pre-filled email
+      router.push({
+        path: '/auth/login',
+        query: { email: (adminUser as Record<string, unknown>).users?.email || '' },
+      });
+
+      $q.notify({
+        type: 'info',
+        message: 'Please enter the password for this company account.',
+      });
+    } catch (error) {
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to login as company',
+      });
+    }
   });
 };
 

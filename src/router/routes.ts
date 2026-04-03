@@ -101,6 +101,12 @@ const routes: RouteRecordRaw[] = [
         name: 'super-admin-settings',
         meta: { title: 'Platform Settings' },
       },
+      {
+        path: 'admins',
+        component: () => import('pages/super-admin/SuperAdminsPage.vue'),
+        name: 'super-admin-admins',
+        meta: { title: 'Super Admins' },
+      },
     ],
   },
 

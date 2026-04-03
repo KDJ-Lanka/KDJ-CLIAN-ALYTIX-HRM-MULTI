@@ -73,6 +73,62 @@
     </div>
 
     <div v-else class="charts-grid">
+      <!-- Growth Chart -->
+      <q-card flat class="chart-card full-width">
+        <q-card-section class="card-header">
+          <span class="card-title">Monthly Growth Trends</span>
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="card-body">
+          <div v-if="growthData.length === 0" class="no-data">
+            <q-icon name="show_chart" size="48px" color="grey-4" />
+            <p>No growth data available</p>
+          </div>
+          <div v-else class="growth-chart">
+            <div class="chart-container">
+              <div class="chart-y-axis">
+                <span class="y-label">{{ maxValue }}</span>
+                <span class="y-label">{{ Math.round(maxValue / 2) }}</span>
+                <span class="y-label">0</span>
+              </div>
+              <div class="chart-bars">
+                <div
+                  v-for="(data, index) in growthData"
+                  :key="index"
+                  class="bar-group"
+                >
+                  <div class="bar-container">
+                    <div
+                      class="bar companies"
+                      :style="{ height: getBarHeight(data.companies, maxValue) }"
+                    >
+                      <q-tooltip>{{ data.month }}: {{ data.companies }} companies</q-tooltip>
+                    </div>
+                    <div
+                      class="bar employees"
+                      :style="{ height: getBarHeight(data.employees, maxValue) }"
+                    >
+                      <q-tooltip>{{ data.month }}: {{ data.employees }} employees</q-tooltip>
+                    </div>
+                  </div>
+                  <span class="x-label">{{ data.month }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item">
+                <div class="legend-color companies"></div>
+                <span>Companies</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color employees"></div>
+                <span>Employees</span>
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
       <!-- Top Companies -->
       <q-card flat class="chart-card">
         <q-card-section class="card-header">
@@ -182,10 +238,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useSuperAdminStore } from 'src/stores/superAdmin';
+import { supabase } from 'src/boot/supabase';
 
 const superAdminStore = useSuperAdminStore();
+const growthData = ref<Array<{ month: string; companies: number; employees: number }>>([]);
 
 const loadAnalytics = async () => {
   await Promise.all([
@@ -193,6 +251,46 @@ const loadAnalytics = async () => {
     superAdminStore.fetchAnalytics(),
     superAdminStore.fetchCompanies(),
   ]);
+  await loadGrowthData();
+};
+
+const loadGrowthData = async () => {
+  // Get company growth by month
+  const { data: companyGrowth } = await supabase
+    .from('companies')
+    .select('created_at')
+    .gte('created_at', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString());
+
+  // Get employee growth by month
+  const { data: employeeGrowth } = await supabase
+    .from('employees')
+    .select('created_at')
+    .gte('created_at', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString());
+
+  // Group by month
+  const months: string[] = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+  }
+
+  growthData.value = months.map(month => {
+    const monthStart = new Date(month);
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+
+    const companies = (companyGrowth || []).filter(c => {
+      const date = new Date(c.created_at);
+      return date >= monthStart && date <= monthEnd;
+    }).length;
+
+    const employees = (employeeGrowth || []).filter(e => {
+      const date = new Date(e.created_at);
+      return date >= monthStart && date <= monthEnd;
+    }).length;
+
+    return { month, companies, employees };
+  });
 };
 
 // Computed properties
@@ -256,6 +354,18 @@ const formatNumber = (num: number): string => {
 
 const capitalize = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+// Chart helpers
+const maxValue = computed(() => {
+  const maxCompanies = Math.max(...growthData.value.map(d => d.companies), 1);
+  const maxEmployees = Math.max(...growthData.value.map(d => d.employees), 1);
+  return Math.max(maxCompanies, maxEmployees);
+});
+
+const getBarHeight = (value: number, max: number): string => {
+  if (max === 0) return '0%';
+  return `${(value / max) * 100}%`;
 };
 
 onMounted(() => {
@@ -569,5 +679,100 @@ onMounted(() => {
 .overview-label {
   font-size: 13px;
   color: #737373;
+}
+
+.growth-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chart-container {
+  display: flex;
+  gap: 16px;
+  min-height: 200px;
+}
+
+.chart-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 8px;
+}
+
+.y-label {
+  font-size: 12px;
+  color: #737373;
+}
+
+.chart-bars {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.bar-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar-container {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  height: 160px;
+  align-items: flex-end;
+}
+
+.bar {
+  flex: 1;
+  min-height: 4px;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+
+  &.companies {
+    background: #1976d2;
+  }
+
+  &.employees {
+    background: #f57c00;
+  }
+}
+
+.x-label {
+  font-size: 11px;
+  color: #737373;
+  text-align: center;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+
+  &.companies {
+    background: #1976d2;
+  }
+
+  &.employees {
+    background: #f57c00;
+  }
 }
 </style>

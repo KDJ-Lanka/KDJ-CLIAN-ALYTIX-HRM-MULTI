@@ -68,6 +68,14 @@
       <q-card flat class="plans-card">
         <q-card-section class="card-header">
           <span class="card-title">Subscription Plans</span>
+          <q-btn
+            flat
+            label="Manage Plans"
+            icon="edit"
+            color="black"
+            no-caps
+            @click="openPlansManager"
+          />
         </q-card-section>
         <q-separator />
         <q-card-section class="card-body">
@@ -82,7 +90,7 @@
               <div class="plan-header">
                 <span class="plan-name">{{ plan.display_name }}</span>
                 <span class="plan-price">
-                  {{ formatPlanCurrency(plan.price_monthly, plan.currency) }}
+                  {{ formatPlanCurrency(parseFloat(plan.price_monthly), plan.currency) }}
                   <span class="price-period">/month</span>
                 </span>
               </div>
@@ -141,16 +149,252 @@
         </q-card-section>
       </q-card>
     </template>
+
+    <!-- Plan Manager Dialog -->
+    <q-dialog v-model="planDialog.show" maximized>
+      <q-card class="plan-dialog">
+        <q-card-section class="dialog-header">
+          <div class="text-h6">Manage Subscription Plans</div>
+          <q-btn flat dense round icon="close" v-close-popup />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="q-pa-md">
+          <div class="row q-col-gutter-md">
+            <div class="col-12" class="text-right">
+              <q-btn
+                unelevated
+                label="Add New Plan"
+                icon="add"
+                color="black"
+                @click="openPlanEditor"
+              />
+            </div>
+          </div>
+
+          <q-table
+            :rows="billing?.plans || []"
+            :columns="planColumns"
+            row-key="id"
+            flat
+            :loading="superAdminStore.billingLoading"
+            class="q-mt-md"
+          >
+            <template v-slot:body-cell-price_monthly="props">
+              <q-td :props="props">
+                Rs {{ parseFloat(props.row.price_monthly).toFixed(0) }}/mo
+              </q-td>
+            </template>
+            <template v-slot:body-cell-is_active="props">
+              <q-td :props="props">
+                <q-badge
+                  :color="props.row.is_active ? 'positive' : 'grey'"
+                  :label="props.row.is_active ? 'Active' : 'Inactive'"
+                />
+              </q-td>
+            </template>
+            <template v-slot:body-cell-is_popular="props">
+              <q-td :props="props">
+                <q-badge v-if="props.row.is_popular" color="orange" label="Popular" />
+              </q-td>
+            </template>
+            <template v-slot:body-cell-actions="props">
+              <q-td :props="props">
+                <q-btn flat dense round icon="more_vert">
+                  <q-menu>
+                    <q-list style="min-width: 160px">
+                      <q-item clickable v-close-popup @click="openPlanEditor(props.row)">
+                        <q-item-section avatar><q-icon name="edit" /></q-item-section>
+                        <q-item-section>Edit</q-item-section>
+                      </q-item>
+                      <q-item clickable v-close-popup @click="togglePlanActive(props.row)">
+                        <q-item-section avatar>
+                          <q-icon :name="props.row.is_active ? 'block' : 'check_circle'" />
+                        </q-item-section>
+                        <q-item-section>{{ props.row.is_active ? 'Deactivate' : 'Activate' }}</q-item-section>
+                      </q-item>
+                      <q-item
+                        v-if="!props.row.is_popular"
+                        clickable
+                        v-close-popup
+                        @click="setPopularPlan(props.row)"
+                      >
+                        <q-item-section avatar><q-icon name="star" /></q-item-section>
+                        <q-item-section>Set as Popular</q-item-section>
+                      </q-item>
+                      <q-item
+                        v-else
+                        clickable
+                        v-close-popup
+                        @click="unsetPopularPlan(props.row)"
+                      >
+                        <q-item-section avatar><q-icon name="star_border" /></q-item-section>
+                        <q-item-section>Unset Popular</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-menu>
+                </q-btn>
+              </q-td>
+            </template>
+          </q-table>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Plan Editor Dialog -->
+    <q-dialog v-model="planEditor.show">
+      <q-card class="plan-editor-dialog">
+        <q-card-section class="dialog-header">
+          <div class="text-h6">{{ planEditor.mode === 'create' ? 'Add Plan' : 'Edit Plan' }}</div>
+          <q-btn flat dense round icon="close" v-close-popup />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="q-pa-md">
+          <q-form @submit="savePlan" class="q-gutter-md">
+            <q-input
+              v-model="planEditor.name"
+              label="Plan Name (internal)"
+              outlined
+              dense
+              hint="e.g., starter, professional, enterprise"
+              :rules="[(v) => !!v || 'Name is required']"
+            />
+
+            <q-input
+              v-model="planEditor.display_name"
+              label="Display Name"
+              outlined
+              dense
+              hint="e.g., Starter Plan, Professional Plan"
+              :rules="[(v) => !!v || 'Display name is required']"
+            />
+
+            <q-input
+              v-model="planEditor.description"
+              label="Description"
+              outlined
+              dense
+              type="textarea"
+              rows="2"
+            />
+
+            <div class="row q-col-gutter-md">
+              <div class="col-6">
+                <q-input
+                  v-model.number="planEditor.price_monthly"
+                  label="Monthly Price (LKR)"
+                  outlined
+                  dense
+                  type="number"
+                  min="0"
+                  :rules="[(v) => v !== undefined && v >= 0 || 'Price is required']"
+                />
+              </div>
+              <div class="col-6">
+                <q-input
+                  v-model.number="planEditor.price_yearly"
+                  label="Yearly Price (LKR)"
+                  outlined
+                  dense
+                  type="number"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <div class="row q-col-gutter-md">
+              <div class="col-6">
+                <q-input
+                  v-model.number="planEditor.max_employees"
+                  label="Max Employees"
+                  outlined
+                  dense
+                  type="number"
+                  min="1"
+                  :rules="[(v) => v && v > 0 || 'Required']"
+                />
+              </div>
+              <div class="col-6">
+                <q-input
+                  v-model.number="planEditor.max_storage_mb"
+                  label="Storage (MB)"
+                  outlined
+                  dense
+                  type="number"
+                  min="1"
+                  :rules="[(v) => v && v > 0 || 'Required']"
+                />
+              </div>
+            </div>
+
+            <div class="row q-col-gutter-md items-center">
+              <div class="col-6">
+                <q-input
+                  v-model.number="planEditor.sort_order"
+                  label="Sort Order"
+                  outlined
+                  dense
+                  type="number"
+                  min="0"
+                />
+              </div>
+              <div class="col-6">
+                <q-toggle v-model="planEditor.is_active" label="Active" color="positive" />
+                <q-toggle v-model="planEditor.is_popular" label="Popular Plan" color="orange" class="q-ml-md" />
+              </div>
+            </div>
+          </q-form>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Cancel" v-close-popup />
+          <q-btn unelevated label="Save" color="black" @click="savePlan" :loading="planEditor.saving" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useQuasar } from 'quasar';
 import { useSuperAdminStore, type BillingData } from 'src/stores/superAdmin';
+import { supabase } from 'src/boot/supabase';
 
+const $q = useQuasar();
 const superAdminStore = useSuperAdminStore();
 
 const billing = computed<BillingData | null>(() => superAdminStore.billing);
+
+const planDialog = ref({ show: false });
+const planEditor = ref({
+  show: false,
+  mode: 'create' as 'create' | 'edit',
+  id: '',
+  name: '',
+  display_name: '',
+  description: '',
+  price_monthly: 0,
+  price_yearly: 0,
+  max_employees: 10,
+  max_storage_mb: 1000,
+  sort_order: 0,
+  is_active: true,
+  is_popular: false,
+  saving: false,
+});
+
+const planColumns = [
+  { name: 'display_name', label: 'Plan', field: 'display_name', align: 'left' as const, sortable: true },
+  { name: 'price_monthly', label: 'Monthly Price', field: 'price_monthly', align: 'left' as const },
+  { name: 'max_employees', label: 'Max Employees', field: 'max_employees', align: 'left' as const },
+  { name: 'is_active', label: 'Status', field: 'is_active', align: 'center' as const },
+  { name: 'is_popular', label: '', field: 'is_popular', align: 'center' as const },
+  { name: 'actions', label: '', field: '', align: 'right' as const },
+];
 
 const totalCompanies = computed(() => {
   return billing.value?.companiesByPlan?.reduce((sum, item) => sum + item.count, 0) || 0;
@@ -161,6 +405,152 @@ const loadBillingData = async () => {
     superAdminStore.fetchStats(),
     superAdminStore.fetchBillingData(),
   ]);
+};
+
+const openPlansManager = () => {
+  planDialog.value.show = true;
+};
+
+const openPlanEditor = (plan?: any) => {
+  if (plan) {
+    planEditor.value = {
+      show: true,
+      mode: 'edit',
+      id: plan.id,
+      name: plan.name,
+      display_name: plan.display_name,
+      description: plan.description || '',
+      price_monthly: parseFloat(plan.price_monthly),
+      price_yearly: parseFloat(plan.price_yearly),
+      max_employees: plan.max_employees,
+      max_storage_mb: plan.max_storage_mb,
+      sort_order: plan.sort_order,
+      is_active: plan.is_active,
+      is_popular: plan.is_popular,
+      saving: false,
+    };
+  } else {
+    planEditor.value = {
+      show: true,
+      mode: 'create',
+      id: '',
+      name: '',
+      display_name: '',
+      description: '',
+      price_monthly: 0,
+      price_yearly: 0,
+      max_employees: 10,
+      max_storage_mb: 1000,
+      sort_order: 0,
+      is_active: true,
+      is_popular: false,
+      saving: false,
+    };
+  }
+};
+
+const savePlan = async () => {
+  if (!planEditor.value.name || !planEditor.value.display_name) {
+    $q.notify({ type: 'warning', message: 'Please fill in required fields' });
+    return;
+  }
+
+  planEditor.value.saving = true;
+  try {
+    if (planEditor.value.mode === 'create') {
+      const { error } = await supabase.from('subscription_plans').insert({
+        name: planEditor.value.name,
+        display_name: planEditor.value.display_name,
+        description: planEditor.value.description,
+        price_monthly: planEditor.value.price_monthly,
+        price_yearly: planEditor.value.price_yearly,
+        currency: 'LKR',
+        max_employees: planEditor.value.max_employees,
+        max_storage_mb: planEditor.value.max_storage_mb,
+        sort_order: planEditor.value.sort_order,
+        is_active: planEditor.value.is_active,
+        is_popular: planEditor.value.is_popular,
+      } as never);
+
+      if (error) throw error;
+      $q.notify({ type: 'positive', message: 'Plan created' });
+    } else {
+      const { error } = await supabase
+        .from('subscription_plans')
+        .update({
+          display_name: planEditor.value.display_name,
+          description: planEditor.value.description,
+          price_monthly: planEditor.value.price_monthly,
+          price_yearly: planEditor.value.price_yearly,
+          max_employees: planEditor.value.max_employees,
+          max_storage_mb: planEditor.value.max_storage_mb,
+          sort_order: planEditor.value.sort_order,
+          is_active: planEditor.value.is_active,
+          is_popular: planEditor.value.is_popular,
+        } as never)
+        .eq('id', planEditor.value.id);
+
+      if (error) throw error;
+      $q.notify({ type: 'positive', message: 'Plan updated' });
+    }
+
+    planEditor.value.show = false;
+    await superAdminStore.fetchBillingData();
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to save plan';
+    $q.notify({ type: 'negative', message });
+  } finally {
+    planEditor.value.saving = false;
+  }
+};
+
+const togglePlanActive = async (plan: any) => {
+  try {
+    const { error } = await supabase
+      .from('subscription_plans')
+      .update({ is_active: !plan.is_active } as never)
+      .eq('id', plan.id);
+
+    if (error) throw error;
+    await superAdminStore.fetchBillingData();
+    $q.notify({ type: 'positive', message: `Plan ${plan.is_active ? 'deactivated' : 'activated'}` });
+  } catch (error: unknown) {
+    $q.notify({ type: 'negative', message: 'Failed to update plan' });
+  }
+};
+
+const setPopularPlan = async (plan: any) => {
+  try {
+    // First, unset all popular flags
+    await supabase.from('subscription_plans').update({ is_popular: false } as never).eq('is_popular', true);
+
+    // Then set this one as popular
+    const { error } = await supabase
+      .from('subscription_plans')
+      .update({ is_popular: true } as never)
+      .eq('id', plan.id);
+
+    if (error) throw error;
+    await superAdminStore.fetchBillingData();
+    $q.notify({ type: 'positive', message: 'Plan set as popular' });
+  } catch (error: unknown) {
+    $q.notify({ type: 'negative', message: 'Failed to update plan' });
+  }
+};
+
+const unsetPopularPlan = async (plan: any) => {
+  try {
+    const { error } = await supabase
+      .from('subscription_plans')
+      .update({ is_popular: false } as never)
+      .eq('id', plan.id);
+
+    if (error) throw error;
+    await superAdminStore.fetchBillingData();
+    $q.notify({ type: 'positive', message: 'Popular plan unset' });
+  } catch (error: unknown) {
+    $q.notify({ type: 'negative', message: 'Failed to update plan' });
+  }
 };
 
 const getCompaniesCount = (planName: string): number => {
@@ -183,12 +573,11 @@ const formatCurrency = (num: number): string => {
   return num.toFixed(0);
 };
 
-const formatPlanCurrency = (amount: string, currency: string): string => {
-  const num = parseFloat(amount);
+const formatPlanCurrency = (amount: number, currency: string): string => {
   if (currency === 'LKR') {
-    return new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', minimumFractionDigits: 0 }).format(num);
+    return new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', minimumFractionDigits: 0 }).format(amount);
   }
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency, minimumFractionDigits: 0 }).format(num);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency, minimumFractionDigits: 0 }).format(amount);
 };
 
 const capitalize = (str: string): string => {
@@ -197,6 +586,7 @@ const capitalize = (str: string): string => {
 
 onMounted(() => {
   void loadBillingData();
+});
 });
 </script>
 
@@ -417,6 +807,28 @@ onMounted(() => {
 .plan-stats {
   padding-top: 12px;
   border-top: 1px solid #f5f5f5;
+}
+
+.companies-count {
+  font-size: 13px;
+  color: #737373;
+}
+
+// Dialog styles
+.plan-dialog {
+  min-width: 800px;
+}
+
+.plan-editor-dialog {
+  min-width: 500px;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>
 }
 
 .companies-count {
